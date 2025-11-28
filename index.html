@@ -4,319 +4,278 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>護理記錄產生器</title>
+    <!-- 引入資料庫 -->
+    <script src="database.js"></script>
     <style>
+        :root {
+            --primary: #008080; /* 醫療綠 */
+            --primary-dark: #005f5f;
+            --bg: #f0f4f8;
+            --card-bg: #ffffff;
+            --text: #333;
+        }
         body {
-            font-family: "Microsoft JhengHei", Arial, sans-serif;
-            background-color: #f4f7f6;
+            font-family: "Segoe UI", "Microsoft JhengHei", sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
             margin: 0;
             padding: 20px;
             display: flex;
             justify-content: center;
+            min-height: 100vh;
         }
         .container {
-            background-color: white;
+            background: var(--card-bg);
             width: 100%;
-            max-width: 600px;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            max-width: 700px;
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        h2 {
+        h1 {
+            color: var(--primary);
             text-align: center;
-            color: #2c3e50;
-            margin-bottom: 20px;
+            margin: 0 0 10px 0;
+            font-size: 24px;
         }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
+        .section-title {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
             margin-bottom: 5px;
-            font-weight: bold;
-            color: #555;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        select, input[type="text"] {
+        select, input, textarea {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             border: 1px solid #ddd;
-            border-radius: 5px;
+            border-radius: 8px;
             font-size: 16px;
-            box-sizing: border-box; /* Fix padding issue */
+            box-sizing: border-box;
+            background: #fff;
+            transition: border 0.3s;
         }
-        .variable-input-group {
-            background-color: #e8f4f8;
+        select:focus, input:focus, textarea:focus {
+            border-color: var(--primary);
+            outline: none;
+        }
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        /* 變數輸入區 */
+        #variableArea {
+            background-color: #e6f2f2;
             padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-            border-left: 5px solid #3498db;
+            border-radius: 8px;
+            border-left: 5px solid var(--primary);
+            display: none; /* 預設隱藏 */
         }
-        .variable-input-group h4 {
-            margin-top: 0;
-            color: #2980b9;
+        .var-group {
+            margin-bottom: 10px;
+        }
+        .var-group label {
+            display: block;
+            font-size: 14px;
+            margin-bottom: 4px;
+            color: var(--primary-dark);
+            font-weight: bold;
         }
         textarea {
-            width: 100%;
             height: 120px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            font-size: 16px;
             resize: vertical;
-            background-color: #fafafa;
-            box-sizing: border-box;
+            font-family: Consolas, "Courier New", monospace;
+            line-height: 1.5;
         }
-        .btn-copy {
-            background-color: #27ae60;
+        .btn {
+            background-color: var(--primary);
             color: white;
             border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 5px;
+            padding: 15px;
+            border-radius: 8px;
             font-size: 18px;
+            font-weight: bold;
             cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.3s;
+            transition: background 0.2s, transform 0.1s;
         }
-        .btn-copy:hover {
-            background-color: #219150;
+        .btn:hover {
+            background-color: var(--primary-dark);
         }
-        .btn-copy:active {
-            background-color: #1e8449;
+        .btn:active {
+            transform: scale(0.98);
         }
-        /* 隱藏空變數區塊 */
-        .hidden {
-            display: none;
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 30px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
         }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>📝 護理記錄產生器</h2>
+    <h1>🏥 護理記錄快手</h1>
 
-    <!-- 選單區 -->
-    <div class="form-group">
-        <label>1. 主處置 (Main Procedure)</label>
-        <select id="mainSelect" onchange="updateCategory()">
-            <option value="">請選擇...</option>
-        </select>
+    <div>
+        <div class="section-title">選擇處置類別</div>
+        <div class="row">
+            <select id="mainSelect" onchange="updateCategory()">
+                <option value="">(1) 主項目...</option>
+            </select>
+            <select id="catSelect" onchange="updateSubCategory()" disabled>
+                <option value="">(2) 分類...</option>
+            </select>
+        </div>
+        <div style="margin-top: 15px;">
+            <select id="subSelect" onchange="renderVariables()" disabled>
+                <option value="">(3) 詳細內容...</option>
+            </select>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label>2. 分類 (Category)</label>
-        <select id="catSelect" onchange="updateSubCategory()" disabled>
-            <option value="">請先選擇主處置</option>
-        </select>
-    </div>
-
-    <div class="form-group">
-        <label>3. 次分類 / 內容 (Detail)</label>
-        <select id="subSelect" onchange="renderVariables()" disabled>
-            <option value="">請先選擇分類</option>
-        </select>
-    </div>
-
-    <!-- 動態變數輸入區 (會根據內容自動產生) -->
-    <div id="variableContainer" class="variable-input-group hidden">
-        <h4>填寫規格/數值：</h4>
+    <!-- 動態變數區 -->
+    <div id="variableArea">
         <div id="dynamicInputs"></div>
     </div>
 
-    <!-- 結果區 -->
-    <div class="form-group">
-        <label>預覽結果 (可直接編輯)</label>
-        <textarea id="resultArea"></textarea>
+    <div>
+        <div class="section-title">預覽與編輯</div>
+        <textarea id="resultArea" placeholder="生成的記錄將顯示於此..."></textarea>
     </div>
 
-    <button class="btn-copy" onclick="copyText()">複製記錄</button>
+    <button class="btn" onclick="copyText()">複製記錄 (Copy)</button>
 </div>
 
-<script>
-    // ==========================================
-    // 資料設定區 (請在此處修改你的護理記錄內容)
-    // 格式： {{變數名稱}} 代表需要填寫的地方
-    // ==========================================
-    const nursingData = {
-        "Foley (導尿管)": {
-            "置入 (Insertion)": {
-                "一般置入": "Indwelling Foley catheter size {{尺寸}} Fr inserted smoothly with urine output {{尿量}} ml, clear/yellow color. Balloon fixed with {{水球水量}} ml distilled water.",
-                "困難置入": "Tried to insert Foley size {{尺寸}} Fr but failed due to resistance. Consulted Urologist for further evaluation."
-            },
-            "護理 (Care)": {
-                "一般護理": "Foley care done with aqueous beta-iodine. Urine clear, patent flow. Fixed on {{固定位置}} thigh.",
-                "移除": "Foley catheter removed smoothly. Tip intact. Instructed patient to monitor urination."
-            }
-        },
-        "NG Tube (鼻胃管)": {
-            "置入": {
-                "一般置入": "NG tube size {{尺寸}} Fr inserted via {{左/右}} nostril up to {{公分}} cm. Confirmed placement by auscultation. Fixed properly.",
-                "更換": "Old NG tube removed. New NG tube size {{尺寸}} Fr inserted up to {{公分}} cm."
-            },
-            "灌食": {
-                "反抽": "Checked NG tube placement, negative specific signs. Regurgitation: {{反抽量}} ml. Color: {{顏色}}.",
-                "一般灌食": "Feeding formula {{配方名稱}} {{毫升}} ml given via NG tube. Tolerated well, no vomiting."
-            }
-        },
-        "IV (靜脈注射)": {
-            "建立": {
-                "一般": "IV cath size {{針頭尺寸}} G set on {{部位}}. Fixed with tegaderm. Patent flow."
-            }
-        }
-    };
+<div id="toast" class="toast">已複製到剪貼簿！</div>
 
-    // ==========================================
-    // 程式邏輯區
-    // ==========================================
+<script>
+    // 讀取 database.js 中的資料
+    const data = window.nursingData || {};
+
     const mainSelect = document.getElementById('mainSelect');
     const catSelect = document.getElementById('catSelect');
     const subSelect = document.getElementById('subSelect');
-    const variableContainer = document.getElementById('variableContainer');
+    const variableArea = document.getElementById('variableArea');
     const dynamicInputs = document.getElementById('dynamicInputs');
     const resultArea = document.getElementById('resultArea');
-
     let currentTemplate = "";
 
-    // 1. 初始化頁面，載入第一層選單
-    window.onload = function() {
-        for (let key in nursingData) {
-            let option = document.createElement("option");
-            option.value = key;
-            option.text = key;
-            mainSelect.appendChild(option);
-        }
-    };
+    // 初始化第一層
+    Object.keys(data).forEach(key => {
+        mainSelect.add(new Option(key, key));
+    });
 
-    // 2. 第一層改變，更新第二層
     function updateCategory() {
-        catSelect.innerHTML = '<option value="">請選擇分類...</option>';
-        subSelect.innerHTML = '<option value="">請先選擇分類</option>';
+        catSelect.innerHTML = '<option value="">(2) 分類...</option>';
+        subSelect.innerHTML = '<option value="">(3) 詳細內容...</option>';
+        catSelect.disabled = true;
         subSelect.disabled = true;
-        catSelect.disabled = false;
-        variableContainer.classList.add('hidden');
-        resultArea.value = "";
-
-        let mainVal = mainSelect.value;
-        if (mainVal && nursingData[mainVal]) {
-            for (let key in nursingData[mainVal]) {
-                let option = document.createElement("option");
-                option.value = key;
-                option.text = key;
-                catSelect.appendChild(option);
-            }
+        variableArea.style.display = 'none';
+        resultArea.value = '';
+        
+        const mainVal = mainSelect.value;
+        if (mainVal && data[mainVal]) {
+            catSelect.disabled = false;
+            Object.keys(data[mainVal]).forEach(key => {
+                catSelect.add(new Option(key, key));
+            });
         }
     }
 
-    // 3. 第二層改變，更新第三層
     function updateSubCategory() {
-        subSelect.innerHTML = '<option value="">請選擇內容...</option>';
-        subSelect.disabled = false;
-        variableContainer.classList.add('hidden');
-        resultArea.value = "";
+        subSelect.innerHTML = '<option value="">(3) 詳細內容...</option>';
+        subSelect.disabled = true;
+        variableArea.style.display = 'none';
+        resultArea.value = '';
 
-        let mainVal = mainSelect.value;
-        let catVal = catSelect.value;
+        const mainVal = mainSelect.value;
+        const catVal = catSelect.value;
 
-        if (mainVal && catVal && nursingData[mainVal][catVal]) {
-            let subData = nursingData[mainVal][catVal];
-            for (let key in subData) {
-                let option = document.createElement("option");
-                option.value = subData[key]; // 這裡把內容當作 value
-                option.text = key;           // 標題顯示在選單
-                subSelect.appendChild(option);
-            }
+        if (mainVal && catVal && data[mainVal][catVal]) {
+            subSelect.disabled = false;
+            const items = data[mainVal][catVal];
+            Object.keys(items).forEach(key => {
+                // value 存模板，text 存標題
+                subSelect.add(new Option(key, items[key]));
+            });
         }
     }
 
-    // 4. 第三層改變，解析變數 {{...}} 並產生輸入框
     function renderVariables() {
-        dynamicInputs.innerHTML = "";
+        dynamicInputs.innerHTML = '';
         currentTemplate = subSelect.value;
-        resultArea.value = currentTemplate; // 先顯示原始樣板
+        resultArea.value = currentTemplate;
 
         if (!currentTemplate) {
-            variableContainer.classList.add('hidden');
+            variableArea.style.display = 'none';
             return;
         }
 
-        // 使用 Regex 尋找所有 {{文字}}
+        // 解析 {{變數}}
         const regex = /{{(.*?)}}/g;
         let match;
-        let hasVariables = false;
-
-        // 避免重複變數ID衝突，使用Set
-        let uniqueVars = new Set();
-        
+        const vars = new Set();
         while ((match = regex.exec(currentTemplate)) !== null) {
-            uniqueVars.add(match[1]); // 抓取括號內的文字
-            hasVariables = true;
+            vars.add(match[1]);
         }
 
-        if (hasVariables) {
-            variableContainer.classList.remove('hidden');
-            uniqueVars.forEach(varName => {
-                // 建立輸入框 UI
-                let div = document.createElement("div");
-                div.style.marginBottom = "10px";
-                
-                let label = document.createElement("label");
-                label.innerText = varName + " :";
-                label.style.fontSize = "14px";
-                
-                let input = document.createElement("input");
-                input.type = "text";
-                input.placeholder = "輸入" + varName;
-                input.dataset.varName = varName; // 綁定變數名
-                input.oninput = generateFinalText; // 輸入時即時更新
-
-                div.appendChild(label);
-                div.appendChild(input);
+        if (vars.size > 0) {
+            variableArea.style.display = 'block';
+            vars.forEach(v => {
+                const div = document.createElement('div');
+                div.className = 'var-group';
+                div.innerHTML = `
+                    <label>${v}</label>
+                    <input type="text" data-var="${v}" placeholder="輸入${v}..." oninput="generateText()">
+                `;
                 dynamicInputs.appendChild(div);
             });
-            // 第一次生成完，執行一次替換以清除括號(如果使用者還沒輸入)
-            generateFinalText();
+            // 自動聚焦第一個輸入框
+            setTimeout(() => dynamicInputs.querySelector('input').focus(), 100);
         } else {
-            variableContainer.classList.add('hidden');
+            variableArea.style.display = 'none';
         }
     }
 
-    // 5. 根據輸入框內容，組裝最終文字
-    function generateFinalText() {
-        let tempText = currentTemplate;
-        const inputs = dynamicInputs.querySelectorAll("input");
-
+    function generateText() {
+        let text = currentTemplate;
+        const inputs = dynamicInputs.querySelectorAll('input');
         inputs.forEach(input => {
-            const key = input.dataset.varName;
-            const value = input.value;
-            // 如果有輸入值，就替換；如果沒有，保留 {{key}} 提示使用者或是替換成空
-            // 這裡設定：若未輸入，保留原樣方便識別，或者你可以改成 replace 為 "___"
-            if (value) {
-                // replaceAll 確保同一個變數出現多次也能全部換掉
-                tempText = tempText.split(`{{${key}}}`).join(value);
+            const key = input.dataset.var;
+            const val = input.value;
+            if (val) {
+                text = text.split(`{{${key}}}`).join(val);
             }
         });
-
-        resultArea.value = tempText;
+        resultArea.value = text;
     }
 
-    // 6. 複製功能
     function copyText() {
-        const copyText = document.getElementById("resultArea");
+        const text = resultArea.value;
+        if (!text) return;
         
-        if (!copyText.value) {
-            alert("沒有內容可以複製！");
-            return;
-        }
-
-        copyText.select();
-        copyText.setSelectionRange(0, 99999); /* 手機版兼容 */
-
-        navigator.clipboard.writeText(copyText.value).then(() => {
-            alert("已複製到剪貼簿！");
-        }).catch(err => {
-            alert("複製失敗，請手動複製。");
+        navigator.clipboard.writeText(text).then(() => {
+            const toast = document.getElementById('toast');
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2000);
         });
     }
 </script>
-
 </body>
 </html>
