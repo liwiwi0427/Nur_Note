@@ -48,45 +48,6 @@
 <div id="toast" class="toast">✅ 已複製成功！</div>
 
 <script>
-    /* 這裡的邏輯不變，維持原本的功能 */
-    const data = window.nursingData || {};
-    const mainSelect = document.getElementById('mainSelect');
-    const catSelect = document.getElementById('catSelect');
-    const subSelect = document.getElementById('subSelect');
-    const variableArea = document.getElementById('variableArea');
-    const dynamicInputs = document.getElementById('dynamicInputs');
-    const resultArea = document.getElementById('resultArea');
-    let currentTemplate = "";
-
-    Object.keys(data).forEach(key => mainSelect.add(new Option(key, key)));
-
-    function updateCategory() {
-        catSelect.innerHTML = '<option value="">分類...</option>';
-        subSelect.innerHTML = '<option value="">詳細內容...</option>';
-        catSelect.disabled = true;
-        subSelect.disabled = true;
-        variableArea.style.display = 'none';
-        resultArea.value = '';
-        
-        if (mainSelect.value && data[mainSelect.value]) {
-            catSelect.disabled = false;
-            Object.keys(data[mainSelect.value]).forEach(key => catSelect.add(new Option(key, key)));
-        }
-    }
-
-    function updateSubCategory() {
-        subSelect.innerHTML = '<option value="">詳細內容...</option>';
-        subSelect.disabled = true;
-        variableArea.style.display = 'none';
-        resultArea.value = '';
-
-        if (mainSelect.value && catSelect.value) {
-            subSelect.disabled = false;
-            const items = data[mainSelect.value][catSelect.value];
-            Object.keys(items).forEach(key => subSelect.add(new Option(key, items[key])));
-        }
-    }
-
     function renderVariables() {
         dynamicInputs.innerHTML = '';
         currentTemplate = subSelect.value;
@@ -97,20 +58,75 @@
             return;
         }
 
+        // 1. 抓取所有 {{...}} 內容
         const regex = /{{(.*?)}}/g;
         let match;
-        const vars = new Set();
-        while ((match = regex.exec(currentTemplate)) !== null) vars.add(match[1]);
+        const vars = new Set(); // 用 Set 避免重複抓取相同變數
+        
+        while ((match = regex.exec(currentTemplate)) !== null) {
+            vars.add(match[1]); // match[1] 會抓到 "顏色|紅|黃" 這樣的完整字串
+        }
 
         if (vars.size > 0) {
             variableArea.style.display = 'block';
-            vars.forEach(v => {
+            
+            vars.forEach(tagContent => {
                 const div = document.createElement('div');
-                div.style.marginBottom = "10px";
-                div.innerHTML = `<label>${v}</label><input type="text" data-var="${v}" placeholder="輸入${v}..." oninput="generateText()">`;
+                div.style.marginBottom = "15px";
+
+                // 2. 判斷是否有 '|' 符號
+                if (tagContent.includes('|')) {
+                    // === 下拉選單模式 ===
+                    const parts = tagContent.split('|');
+                    const labelName = parts[0]; // 第一個是標題
+                    const options = parts.slice(1); // 剩下的是選項
+
+                    let label = document.createElement('label');
+                    label.innerText = labelName;
+                    
+                    let select = document.createElement('select');
+                    select.dataset.originalTag = tagContent; // 記住原始標籤以便替換
+                    select.onchange = generateText; // 改變時觸發更新
+
+                    // 加入一個預設提示選項
+                    let defaultOpt = document.createElement('option');
+                    defaultOpt.text = `(請選擇${labelName})`;
+                    defaultOpt.value = ""; 
+                    // defaultOpt.selected = true; // 預設選中
+                    select.appendChild(defaultOpt);
+
+                    options.forEach(optText => {
+                        let option = document.createElement('option');
+                        option.value = optText;
+                        option.text = optText;
+                        select.appendChild(option);
+                    });
+
+                    div.appendChild(label);
+                    div.appendChild(select);
+
+                } else {
+                    // === 原本的文字輸入框模式 ===
+                    let label = document.createElement('label');
+                    label.innerText = tagContent;
+                    
+                    let input = document.createElement('input');
+                    input.type = "text";
+                    input.dataset.originalTag = tagContent; // 記住原始標籤
+                    input.placeholder = "輸入" + tagContent + "...";
+                    input.oninput = generateText;
+
+                    div.appendChild(label);
+                    div.appendChild(input);
+                }
+
                 dynamicInputs.appendChild(div);
             });
-            setTimeout(() => dynamicInputs.querySelector('input').focus(), 100);
+            
+            // 如果只有文字框，自動聚焦第一個
+            const firstInput = dynamicInputs.querySelector('input');
+            if (firstInput) setTimeout(() => firstInput.focus(), 100);
+
         } else {
             variableArea.style.display = 'none';
         }
@@ -118,21 +134,40 @@
 
     function generateText() {
         let text = currentTemplate;
-        dynamicInputs.querySelectorAll('input').forEach(input => {
-            if (input.value) text = text.split(`{{${input.dataset.var}}}`).join(input.value);
+        
+        // 抓取所有的 input 和 select
+        const inputs = dynamicInputs.querySelectorAll('input, select');
+        
+        inputs.forEach(el => {
+            const originalTag = el.dataset.originalTag; // 取得 "顏色|紅|黃"
+            const val = el.value;
+
+            // 如果使用者有輸入或選擇，就進行替換
+            if (val) {
+                // 使用 replaceAll 確保重複出現的變數都會被換掉
+                // 我們要替換的是整個 {{顏色|紅|黃}}
+                text = text.split(`{{${originalTag}}}`).join(val);
+            }
         });
+        
         resultArea.value = text;
     }
 
-    function copyText() {
-        const text = resultArea.value;
-        if (!text) return;
-        navigator.clipboard.writeText(text).then(() => {
-            const toast = document.getElementById('toast');
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 2000);
-        });
+    // ...後面 copyText 等其他函式維持原樣...
+2. 如何在資料庫 (database.js) 中使用？
+現在你可以去修改你的 database.js，加入選項了。
+範例：
+code
+JavaScript
+window.nursingData = {
+    "管路處置": {
+        "Foley": {
+            "一般置入": "導尿管置入，規格：{{Size}} Fr，材質：{{材質|矽膠|橡膠}}，尿液顏色：{{顏色|淡黃|茶色|血色}}，性質：{{性質|澄清|混濁}}。"
+        }
+    },
+    "評估": {
+        "意識": {
+            "GCS": "意識狀態：E {{E|4|3|2|1}} V {{V|5|4|3|2|1|T}} M {{M|6|5|4|3|2|1}}，瞳孔反射：{{瞳孔|++/++|+-/+-|--/--}}。"
+        }
     }
-</script>
-</body>
-</html>
+};
