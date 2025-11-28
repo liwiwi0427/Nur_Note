@@ -1,0 +1,231 @@
+/* =========================================
+   全域設定 (Global)
+   ========================================= */
+:root {
+    /* 醫療配色方案 */
+    --primary: #00897b;       /* 主色：湖水綠 (專業、冷靜) */
+    --primary-dark: #005f56;  /* 深綠色 (按鈕互動用) */
+    --secondary: #546e7a;     /* 次要色：藍灰色 (文字、標題) */
+    --accent: #f4511e;        /* 強調色：橘紅色 (用於重要操作，如匯出) */
+    --bg-color: #f0f2f5;      /* 背景色：淺灰 (護眼) */
+    --card-bg: #ffffff;       /* 卡片背景：純白 */
+    --border: #cfd8dc;        /* 邊框顏色 */
+    --text-main: #263238;     /* 主要文字 */
+    --text-light: #78909c;    /* 次要文字 */
+}
+
+body {
+    font-family: "Segoe UI", "Microsoft JhengHei", "Heiti TC", sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    min-height: 100vh;
+    box-sizing: border-box;
+}
+
+/* =========================================
+   卡片容器 (Container)
+   ========================================= */
+.container {
+    background: var(--card-bg);
+    width: 100%;
+    max-width: 720px; /* 稍微加寬 */
+    border-radius: 16px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05); /* 柔和陰影 */
+    padding: 35px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    transition: transform 0.3s ease;
+}
+
+/* 標題樣式 */
+h1, h2 {
+    text-align: center;
+    color: var(--primary);
+    margin: 0 0 10px 0;
+    letter-spacing: 1px;
+}
+
+h2 {
+    border-bottom: 2px solid var(--bg-color);
+    padding-bottom: 15px;
+    font-size: 1.5rem;
+}
+
+/* 小標題 */
+.section-title, label {
+    font-size: 0.9rem;
+    color: var(--secondary);
+    font-weight: 700;
+    margin-bottom: 8px;
+    display: block;
+    text-transform: uppercase; /* 全大寫 */
+    letter-spacing: 0.5px;
+}
+
+/* =========================================
+   表單元件 (Forms)
+   ========================================= */
+.form-group {
+    margin-bottom: 20px;
+}
+
+/* 讓兩個輸入框並排的排版 */
+.row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+}
+
+/* 輸入框與下拉選單 */
+select, input[type="text"], textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    font-size: 16px;
+    color: var(--text-main);
+    background-color: #fafafa;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+/* 輸入框被選取時的特效 */
+select:focus, input:focus, textarea:focus {
+    border-color: var(--primary);
+    background-color: #fff;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.1);
+}
+
+select:disabled {
+    background-color: #eeeeee;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+textarea {
+    font-family: Consolas, "Courier New", monospace; /* 等寬字體方便看對齊 */
+    line-height: 1.6;
+    min-height: 120px;
+    resize: vertical;
+}
+
+/* 提示文字 */
+.hint {
+    font-size: 13px;
+    color: var(--text-light);
+    margin-top: 5px;
+}
+
+/* =========================================
+   特殊區域：變數輸入區 (Variable Area)
+   ========================================= */
+#variableArea {
+    background-color: rgba(0, 137, 123, 0.05); /* 極淡的綠色背景 */
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 5px solid var(--primary);
+    margin-top: 10px;
+}
+
+/* =========================================
+   特殊區域：預覽程式碼區 (Code Preview)
+   ========================================= */
+.preview-box {
+    background: #263238; /* 深色背景 */
+    color: #eceff1;
+    padding: 15px;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    font-family: monospace;
+    font-size: 13px;
+    border: 1px solid var(--secondary);
+}
+
+/* =========================================
+   按鈕 (Buttons)
+   ========================================= */
+button {
+    border: none;
+    padding: 14px 20px;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* 圖示跟文字的距離 */
+}
+
+/* 主要操作按鈕 (複製) */
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+    width: 100%;
+    font-size: 1.1rem;
+    box-shadow: 0 4px 6px rgba(0, 137, 123, 0.2);
+}
+.btn-primary:hover {
+    background-color: var(--primary-dark);
+    transform: translateY(-1px);
+}
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+/* 次要操作按鈕 (新增暫存) */
+.btn-secondary {
+    background-color: var(--secondary);
+    color: white;
+    width: auto;
+    margin-top: 10px;
+}
+.btn-secondary:hover {
+    background-color: #455a64;
+}
+
+/* 危險/重要按鈕 (匯出存檔) */
+.btn-danger {
+    background-color: var(--accent);
+    color: white;
+    width: 100%;
+    margin-top: 20px;
+    box-shadow: 0 4px 6px rgba(244, 81, 30, 0.2);
+}
+.btn-danger:hover {
+    background-color: #d84315;
+}
+
+/* =========================================
+   吐司通知 (Toast Notification)
+   ========================================= */
+.toast {
+    position: fixed;
+    bottom: 30px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px); /* 預設往下藏 */
+    background: rgba(38, 50, 56, 0.9);
+    color: white;
+    padding: 12px 24px;
+    border-radius: 50px;
+    font-size: 14px;
+    opacity: 0;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
